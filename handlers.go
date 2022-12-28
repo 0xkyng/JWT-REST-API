@@ -2,6 +2,13 @@ package main
 
 import "net/http"
 
+var jwtKey =[]byte("secret_key")
+
+var Users = map[string]string{
+	"user1" : "password1",
+	"user2" : "password2",
+}
+
 func Login(w http.ResponseWriter, r *http.Request) {
 
 }
