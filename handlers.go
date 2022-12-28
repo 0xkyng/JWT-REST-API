@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -35,7 +36,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if the password tallies with the one in credentials
+	// Check if username & password are the same as in database
 	expectedPassword, ok := Users[credentials.Username]
 	
 	if !ok || expectedPassword != credentials.Password {
@@ -73,7 +74,45 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func Home(w http.ResponseWriter, r *http.Request) {
+	// Get cookie value from the token
+	cookie, err := r.Cookie("token")
+	// Error handling
+	if err != nil {
+		if err == http.ErrNoCookie {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
+	// Get token string from cookie.value
+	tokenStr := cookie.Value
+
+	claims := &Claims{}
+
+	tkn, err := jwt.ParseWithClaims(tokenStr, claims,
+		func(t *jwt.Token) (interface{}, error) {
+			return jwtKey, nil
+		})
+
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Check if token is valid
+	if !tkn.Valid {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	// Passing data back to the browser/client
+	w.Write([]byte(fmt.Sprintf("Hello, %s", claims.Username)))
 }
 
 func Refresh(w http.ResponseWriter, r *http.Request) {
